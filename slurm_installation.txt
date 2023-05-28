@@ -1,0 +1,123 @@
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+							Master Machine Installation
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+
+Step 1. set all Prerequtsite
+`````````````````````````````
+#Disable Firewall
+#Disable Selinux
+#Make Hosts
+#Make Passwordless SSH
+#Creaate NFS Storage
+#Time sync (Chrony)
+#User Sync (rsync)
+
+
+Step 2. Download and Install neccessary packages
+`````````````````````````````````````````````````
+wget https://download.schedmd.com/slurm/slurm-22.05.7.tar.bz2
+yum install -y mariadb-server mariadb-devel epel-release munge munge-libs munge-devel rpm-build python3 perl-ExtUtils-Install* gcc
+yum install -y openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel man2html libibmad libibumad
+rpmbuild -ta slurm-22.05.7
+
+# copy /root/rpmbuild to NFS Directory for that all clients can access
+cp /root/rpmbuild /mnt/share/
+
+Step3. Create munge key and copy to client machine
+```````````````````````````````````````````````````
+/usr/sbin/create-munge-key -r
+chown munge:munge /etc/munge
+chmod 400 /etc/munge/munge.key
+scp /etc/munge/munge.key node1:/etc/munge/ #node1 is client name
+
+Step 5. Install slurm package 
+`````````````````````````````
+cd /root/rpmbuild/RPMS/x86_64/
+yum install slurm*
+
+Step 6. Create slurm user and group
+````````````````````````````````````
+export SLURMUSER=992
+groupadd -g $SLURMUSER slurm
+useradd -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm -s /bin/bash slurm
+
+Step 7. rename slurm.conf.example to slurm.conf and make directories
+````````````````````````````````````````````````````````````````````
+cp /etc/slurm/slurm.conf.example /etc/slurm/slurm.conf
+mkdir -p /var/share/slurm/ctld
+mkdir -p /var/share/slurm/d
+
+Step 8. Edit parameters in slurm.conf
+`````````````````````````````````````
+vi /etc/slurm/slurm.conf
+	#modify parameters
+		clusturname=marvel    #your choice	
+		stateSaveLocation=/var/share/slurm/ctld
+		SlurmSpoolDir=/var/share/slurm/d
+
+Step 9. Change ownership to slurm and make slurm log file
+``````````````````````````````````````````````````````````
+chown -R slurm:slurm /var/share/slurm
+touch /var/log/slurmctld.log
+
+Step 10. Add client details in slurm.conf
+`````````````````````````````````````````
+vi /etc/slurm/slurm.conf
+#paste node details of client
+
+Step 11. Copy slurm.conf file to all clients machine start all services
+````````````````````````````````````````````````````````````````````````
+scp /etc/slurm/slurm.conf node1:/etc/slurm/slurm.conf
+systemctl start slurmctld
+
+Step 12. create database
+`````````````````````````
+# remane slurmdbd.conf.exaple to slurmdbd.conf
+cp /etc/slurm/slurmdbd.conf.example /etc/slurm/slurmdbd.conf
+vi /etc/slurm/slurmdbd.conf
+	#change
+		StorageType=accounting_storage/mysql
+		StorageHost=marval
+		#StoragePort=1234
+		#StoragePass=password
+		StorageUser=slurm
+		StorageLoc=slurm_acct_db		
+vi /etc/slurm/slurm.conf
+	#Change in accounting block
+		AccountingStorageHost=marval		
+		AccountingStorageType=accounting_storage/slurmdbd
+		AccountingStorageUser=slurm
+chown slurm:slurm /etc/slurm/slurmdbd.conf
+systemctl start slurmdbd
+systemctl restart slurmctld
+
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+							Client Machine Installation
+`````````````````````````````````````````````````````````````````````````````````````````````````````````````````
+Step 1. Install all neccessary Packages
+```````````````````````````````````````
+yum install -y mariadb-server mariadb-devel epel-release munge munge-libs munge-devel rpm-build python3 perl-ExtUtils-Install* gcc
+yum install -y openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel man2html libibmad libibumad
+cd /mnt/share/rpmbuild/RPMS/x86_64
+yum install -y slurm*
+
+Step 2. Create slurm user and group
+````````````````````````````````````
+export SLURMUSER=992
+groupadd -g $SLURMUSER slurm
+useradd -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm -s /bin/bash slurm
+
+Step 3. Make directories and log file
+`````````````````````````````````````
+mkdir -p /var/share/slurm/d
+mkdir -p /var/share/slurm/ctld
+chown -R slurm:slurm /var/share/slurm
+touch /var/log/slurmd.log
+
+Step 4. Execute for listing Client detail then paste to master's slurm.conf file
+`````````````````````````````````````````````````````````````````````````````````
+slurm -C
+#copy node dettail and paste on master's slurm.conf
+
+Step 5. Restart all services
+
