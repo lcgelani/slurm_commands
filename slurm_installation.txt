@@ -18,10 +18,11 @@ Step 2. Download and Install neccessary packages
 wget https://download.schedmd.com/slurm/slurm-22.05.7.tar.bz2
 yum install -y mariadb-server mariadb-devel epel-release munge munge-libs munge-devel rpm-build python3 perl-ExtUtils-Install* gcc
 yum install -y openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel man2html libibmad libibumad
-rpmbuild -ta slurm-22.05.7
+yum install -y munge munge-devel munge-libs
+rpmbuild -ta slurm-22.05.7.tar.bz2
 
 # copy /root/rpmbuild to NFS Directory for that all clients can access
-cp /root/rpmbuild /mnt/share/
+cp -r /root/rpmbuild /mnt/share/
 
 Step3. Create munge key and copy to client machine
 ```````````````````````````````````````````````````
@@ -33,7 +34,7 @@ scp /etc/munge/munge.key node1:/etc/munge/ #node1 is client name
 Step 5. Install slurm package 
 `````````````````````````````
 cd /root/rpmbuild/RPMS/x86_64/
-yum install slurm*
+yum install -y slurm*
 
 Step 6. Create slurm user and group
 ````````````````````````````````````
@@ -97,7 +98,9 @@ systemctl restart slurmctld
 Step 1. Install all neccessary Packages
 ```````````````````````````````````````
 yum install -y mariadb-server mariadb-devel epel-release munge munge-libs munge-devel rpm-build python3 perl-ExtUtils-Install* gcc
+yum install -y munge munge-devel munge-libs
 yum install -y openssl openssl-devel pam-devel numactl numactl-devel hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel man2html libibmad libibumad
+
 cd /mnt/share/rpmbuild/RPMS/x86_64
 yum install -y slurm*
 
@@ -116,7 +119,7 @@ touch /var/log/slurmd.log
 
 Step 4. Execute for listing Client detail then paste to master's slurm.conf file
 `````````````````````````````````````````````````````````````````````````````````
-slurm -C
+slurmd -C
 #copy node dettail and paste on master's slurm.conf
 
 Step 5. Restart all services
