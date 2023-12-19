@@ -8,7 +8,7 @@ Step 1. set all Prerequtsite
 #Disable Selinux
 #Make Hosts
 #Make Passwordless SSH
-#Creaate NFS Storage
+#Create NFS Storage
 #Time sync (Chrony)
 #User Sync (rsync)
 
@@ -30,6 +30,7 @@ Step3. Create munge key and copy to client machine
 chown munge:munge /etc/munge
 chmod 400 /etc/munge/munge.key
 scp /etc/munge/munge.key node1:/etc/munge/ #node1 is client name
+systemctl start munge
 
 Step 5. Install slurm package 
 `````````````````````````````
@@ -47,7 +48,8 @@ Step 7. rename slurm.conf.example to slurm.conf and make directories
 cp /etc/slurm/slurm.conf.example /etc/slurm/slurm.conf
 mkdir -p /var/share/slurm/ctld
 mkdir -p /var/share/slurm/d
-
+touch /var/log/slurmctld.log
+touch /var/log/slurmd.log
 Step 8. Edit parameters in slurm.conf
 `````````````````````````````````````
 vi /etc/slurm/slurm.conf
@@ -59,7 +61,7 @@ vi /etc/slurm/slurm.conf
 Step 9. Change ownership to slurm and make slurm log file
 ``````````````````````````````````````````````````````````
 chown -R slurm:slurm /var/share/slurm
-touch /var/log/slurmctld.log
+
 
 Step 10. Add client details in slurm.conf
 `````````````````````````````````````````
